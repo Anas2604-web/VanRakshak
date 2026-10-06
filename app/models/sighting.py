@@ -6,6 +6,8 @@ from pydantic import BaseModel, Field, BeforeValidator, field_validator, ConfigD
 # Converts MongoDB BSON ObjectId into a clean string for frontend clients
 PyObjectId = Annotated[str, BeforeValidator(str)]
 
+AnimalType = Literal["tiger", "leopard", "elephant", "bear"]
+
 # 2. STRICT GEOJSON SUB-MODEL
 class GeoJsonPoint(BaseModel):
     type: Literal["Point"] = "Point"
@@ -29,7 +31,7 @@ class Sighting(BaseModel):
     id: Optional[PyObjectId] = Field(default=None, alias="_id")
 
     location: GeoJsonPoint
-    animal: Literal["tiger", "leopard", "elephant", "bear"]
+    animal: AnimalType
     source: Literal["human", "camera_trap", "simulated_camera_trap"]
     confidence: Literal["unverified", "likely", "confirmed"] = "unverified"
     timestamp: datetime
@@ -37,3 +39,8 @@ class Sighting(BaseModel):
     model_config = ConfigDict(
         populate_by_name=True,
     )
+
+class SosRequest(BaseModel):
+    animal: AnimalType  # tiger/leopard/elephant/bear only
+    latitude: float = Field(ge=-90, le=90)
+    longitude: float = Field(ge=-180, le=180)
