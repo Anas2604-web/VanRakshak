@@ -1,22 +1,24 @@
 from datetime import datetime, timezone
-from uuid import uuid4
 
 from fastapi import APIRouter
 
 from app.models.sighting import GeoJsonPoint, Sighting, SosRequest
 
+from app.config.database import get_db
+
 router = APIRouter()
-sightings: list[Sighting] = []  # temporary in-memory store, replaced by Mongo later
 
 
 @router.post("/sos", status_code=202)
 async def create_sos(req: SosRequest) -> dict:
     sighting = Sighting(
-        location=GeoJsonPoint(coordinates=[req.longitude, req.latitude]),  # lng FIRST
+        location=GeoJsonPoint(coordinates=[req.longitude, req.latitude]),
         animal=req.animal,
         source="human",
         confidence="unverified",
         timestamp=datetime.now(timezone.utc),
     )
-    sightings.append(sighting)
-    return {"status": "accepted", "id": str(uuid4())}  # placeholder, Mongo _id replaces it
+    doc = sighting.model_dump(by_alias=True, exclude={"id"})
+    result = await get_db()["sightings"].insert_one(doc)
+
+    return {"status": "accepted","id": str(result.inserted_id) }
