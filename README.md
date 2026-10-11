@@ -2,7 +2,7 @@
 
 Human-wildlife conflict reporting and alert system, inspired by real human-tiger/leopard conflict near Bandhavgarh Tiger Reserve, MP.
 
-**Status: 🚧 Work in progress.** `/sos` now persists to MongoDB with a geospatial index. Alerts, confidence scoring and the map are next.
+**Status: 🚧 Work in progress.** `/sos` persists to MongoDB with a geospatial index, and a nearby-sightings query is in. Confidence scoring, alerts and the map are next.
 
 ## Why
 Villagers near tiger reserves get injured on grazing and forest trips. Tadoba Tiger Reserve runs a hardware-based warning system (thermal cameras + village sirens). VanRakshak aims to be a **software-only** version that any reserve can deploy without special equipment.
@@ -11,7 +11,7 @@ Villagers near tiger reserves get injured on grazing and forest trips. Tadoba Ti
 - [x] FastAPI app + health check
 - [x] `POST /sos`: validated instant-alert endpoint
 - [x] MongoDB (Motor) persistence with 2dsphere geospatial index
-- [ ] Nearby-sightings query (radius + time window)
+- [x] Nearby-sightings query (radius + time window)
 - [ ] Confidence scoring (unverified, likely, confirmed)
 - [ ] Redis pub/sub worker: async fan-out to nearby users
 - [ ] Standard sighting report endpoint
@@ -40,6 +40,7 @@ Returns `{"status": "ok"}`.
 - **GeoJSON validation at the boundary:** bad coordinates fail with a clean 422 instead of a database error.
 - **`source` field** (`human | camera_trap | simulated_camera_trap`): a future camera and vision model can post to the same endpoint with no redesign.
 - **One shared async Mongo client** created at startup (FastAPI lifespan) and closed at shutdown; a `2dsphere` index is created on `sightings.location` for radius queries.
+- **Nearby query as one reusable service function:** `find_nearby` (`app/services/sightings.py`) uses `$near` (nearest first, radius in metres) plus animal and time filters. Confidence scoring and future alerts reuse this single tested query.
 
 ## Known limitations
 - Many villagers lack phones or reliable internet. **Rangers and field staff are the realistic primary reporters.** An offline-first queue will help with intermittent signal, not zero signal.
